@@ -1,33 +1,65 @@
 #!/usr/bin/env python3.11
 from customtkinter import set_appearance_mode, set_default_color_theme
 from customtkinter import CTk, CTkEntry, CTkButton, CTkLabel, CTkFrame
+from customtkinter import DISABLED
 
-class Window:
+class Window(CTk):
 	def __init__(self):
-		self.amountDue: float = 0.0
+		super().__init__()
 		
 		set_appearance_mode("dark")
 		set_default_color_theme("dark-blue")
 
-		self.root = CTk()
-		self.root.geometry("720x480")
+		self.width:  int = self.winfo_screenwidth()
+		self.height: int = self.winfo_screenheight()
+		
+		self.title("Change Calculator")
+		self.attributes("-fullscreen", True) # Initialize screen as fullscreen
+		self.bind("<Escape>", self.quitApplication) # quit application
 
-		self.frame = CTkFrame(master=self.root)
-		self.frame.pack(pady=20, padx=60, fill="both", expand=True)
+		self.amountDue: float = 0.0
+
+		self.left_frame: CTkFrame = CTkFrame(master=self, width=((self.width / 2) - 20), height=(self.height - 40))
+		self.left_frame.grid_propagate(False)
+		self.left_frame.grid(row=0, column=0, pady=20, padx=10)
 
 		# Static label
-		_mainLabel: CTkLabel = CTkLabel(master=self.frame, text="Change Due Calculator")
-		_mainLabel.pack(pady=12, padx=10)
+		_mainLabel: CTkLabel = CTkLabel(master=self.left_frame, text="Change Due Calculator")
+		_mainLabel.grid(row=0, column=0, pady=12, padx=10)
 
-		self.entry: CTkEntry = CTkEntry(master=self.frame, placeholder_text="Amount Charged...")
-		self.entry.pack(pady=12, padx=10)
+		charValidation = self.register(self.only_numbers)
+		self.entry: CTkEntry = CTkEntry(
+			master=self.left_frame,
+			placeholder_text="Amount Charged...",
+			width=200,
+			height=40,
+			validate="key",
+			validatecommand=(charValidation, '%d', '%s', '%S')
+		)
+		self.entry.grid(row=1, column=0, pady=12, padx=10)
 
-		self.invalidLabel = CTkLabel(master=self.frame, text="Not a number", text_color="red")
+		# Warning Label
+		self.invalidLabel: CTkLabel = CTkLabel(master=self.left_frame, text="Not a Number!", text_color="red", font=("Arial", 24, 'bold'))
+		
+		calculateButton: CTkButton = CTkButton(master=self.left_frame, text="Calculate", command=self.calculate, width=200, height=50)
+		calculateButton.grid(row=2, column=0, pady=12, padx=10)
 
-		calculateButton: CTkButton = CTkButton(master=self.frame, text="Calculate", command=self.calculate)
-		calculateButton.pack(pady=12, padx=10)
+		self.right_frame: CTkFrame = CTkFrame(master=self, width=((self.width / 2) - 20), height=(self.height - 40))
+		self.right_frame.grid_propagate(False)
+		self.right_frame.grid(row=0, column=1, pady=20, padx=10)
 
-		self.root.mainloop()
+		self.total: float = 0.0
+		self.totalLabel: CTkLabel = CTkLabel(master=self.right_frame, text=f"Total: {self.total}", font=("Arial", 24, 'bold'))
+		self.totalLabel.grid(row=0, column=0, pady=12, padx=10)
+
+		self.mainloop()
+
+	def quitApplication(self, event=None) -> None: self.destroy()
+
+	def only_numbers(self, action: int, current: str, char: str) -> bool:
+		if action == 0: return True # If delete character
+		if '.' in current and len(current.split('.')[1]) == 2: return False # prevent more than 2 decimal
+		return (char.isdigit() or char == ".") # only allow digits and decimal
 
 	def _validateInput(func: callable) -> callable:
 		def wrapper(self):
@@ -35,7 +67,7 @@ class Window:
 			try:
 				self.amountDue = float(self.entry.get())
 			except ValueError:
-				self.invalidLabel.pack()
+				self.invalidLabel.grid(row=3, column=0)
 				return
 			func(self)
 
