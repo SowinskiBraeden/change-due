@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.11
 from customtkinter import set_appearance_mode, set_default_color_theme
-from customtkinter import CTk, CTkEntry, CTkButton, CTkLabel, CTkFrame, CTkSwitch
+from customtkinter import CTk, CTkEntry, CTkButton, CTkLabel, CTkFrame, CTkSwitch, StringVar
 from currencyButtons import initializeCurrencyButtons
 
 class Window(CTk):
@@ -25,26 +25,49 @@ class Window(CTk):
 
 		# Static label
 		mainLabel: CTkLabel = CTkLabel(master=self.left_frame, text="Change Due Calculator", font=("Arial", 18, 'bold'))
-		mainLabel.grid(row=0, column=0, pady=12, padx=10)
+		mainLabel.grid(row=0, column=0, pady=12)
 
-		charValidation = self.register(self.only_numbers)
-		self.entry: CTkEntry = CTkEntry(
-			master=self.left_frame,
-			width=200,
-			height=40,
-			validate="key",
-			validatecommand=(charValidation, '%d', '%s', '%S'),
-			placeholder_text="Amount Charged..."
+		calculateFrame: CTkFrame = CTkFrame(master=self.left_frame, width=((self.width / 2 - 20) / 2), height=(self.height / 2 - 110), fg_color="gray15")
+		calculateFrame.grid_propagate(False)
+		calculateFrame.grid(pady=(0, 12), padx=15)
+
+		self.amount = StringVar()
+		self.amountBox: CTkEntry = CTkEntry(
+			master=calculateFrame,
+			width=(((self.width / 2 - 20) / 2) - 24),
+			height=50,
+			textvariable=self.amount
 		)
-		self.entry.grid(row=1, column=0, pady=12, padx=10)
-		self.entry.insert(0, 'Amount Charged...')
+		self.amountBox.grid(row=0, column=0, pady=12, padx=10)
+		
+		calculateButtonFrame: CTkFrame = CTkFrame(master=calculateFrame, width=(((self.width / 2 - 20) / 2) - 24), height=(self.height / 2 - 196), fg_color="gray15")
+		calculateButtonFrame.grid_propagate(False)
+		calculateButtonFrame.grid(row=1, column=0, pady=(0, 12), padx=10)
+
+		buttons: list[CTkButton] = [CTkButton(
+			master=calculateButtonFrame,
+			text=f'{i}',
+			command=lambda: self.amountSum(f'{i}'),
+			width=(((self.width / 2 - 20) / 2) - 48) / 3,
+			height=(self.height / 2 - 196) / 4 - 12,
+		) for i in range(0, 10)]
+
+		buttons[0].grid(row=3, column=1, padx=(0, 12), pady=(12, 0))
+		i = 1
+		for r in range(3):
+			for c in range(3):
+				buttons[i].grid(row=r, column=c, padx=(0, 12), pady=(12, 0))
+				i += 1
 
 		# Warning Label
 		self.invalidLabel: CTkLabel = CTkLabel(master=self.left_frame, text="Not a Number!", text_color="red", font=("Arial", 20, 'bold'))
 		
 		calculateButton: CTkButton = CTkButton(master=self.left_frame, text="Calculate", command=self.calculate, width=200, height=50)
-		calculateButton.grid(row=2, column=0, pady=12, padx=10)
+		calculateButton.grid(row=1, column=2, pady=12, padx=10)
 
+		clearButton: CTkButton = CTkButton(master=self.left_frame, text="Clear", command=self.clear, width=200, height=50)
+		clearButton.grid(row=1, column=3, pady=12, padx=10)
+		
 		self.left_frame_bottom: CTkFrame = CTkFrame(master=self, width=(self.width / 2 - 20), height=(self.height / 2 - 40), fg_color="gray20")
 		self.left_frame_bottom.grid_propagate(False)
 		self.left_frame_bottom.grid(row=0, column=0, pady=20, padx=10, sticky='SW')
@@ -83,24 +106,6 @@ class Window(CTk):
 
 	def quitApplication(self, event=None) -> None: self.destroy()
 
-	def only_numbers(self, action: str, current: str, char: str) -> bool:
-		if int(action) == 0: return True # If delete character
-		if '.' in current and len(current.split('.')[1]) == 2: return False # prevent more than 2 decimal
-		return (char.isdigit() or char == ".") # only allow digits and decimal
-
-	def _validateInput(func: callable) -> callable:
-		def wrapper(self):
-			self.invalidLabel.pack_forget()
-			try:
-				self.amountDue = float(self.entry.get())
-			except ValueError:
-				self.invalidLabel.grid(row=3, column=0)
-				return
-			func(self)
-
-		return wrapper
-
-	@_validateInput
 	def calculate(self) -> None:
 		print(self.amountDue)
 
@@ -109,6 +114,12 @@ class Window(CTk):
 		self.total += value * (1 if self.mode else -1)
 		if self.total < 0: self.total = 0
 		self.totalLabel.configure(text=f"Total: {self.total:.2f}")
+
+	def amountSum(self, value: str) -> None:
+		pass
+
+	def clear(self) -> None:
+		pass
 
 if __name__ == '__main__':
 	window = Window()
