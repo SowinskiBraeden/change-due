@@ -30,7 +30,7 @@ class Window(CTk):
 		# Static label
 		mainLabel: CTkLabel = CTkLabel(
 			master=self.left_frame,
-			text="Change Due Calculator",
+			text="Amount Due",
 			font=("Arial", 18, 'bold')
 		)
 		mainLabel.grid(row=0, column=0, pady=12)
@@ -196,6 +196,18 @@ class Window(CTk):
 			if c < 3: c += 1
 			else: c = 0; r += 1
 
+		clearTotalButtons: CTkButton = CTkButton(
+			master=self.left_frame_bottom,
+			text="Clear\nTotal",
+			font=("Arial", 20, 'bold'), 
+      fg_color="IndianRed3", 
+      hover_color="IndianRed4",
+			command=self.clearTotal,
+			width=152, 
+      height=70,
+		)
+		clearTotalButtons.grid(row=3, column=3, pady=12, padx=10)
+
 		# Right frame for output
 		self.right_frame: CTkFrame = CTkFrame(
 			master=self,
@@ -235,6 +247,10 @@ class Window(CTk):
 
 	def clear(self) -> None:
 		self.amount.set("")
+	
+	def clearTotal(self) -> None:
+		self.total: float = 0.0
+		self.totalLabel.configure(text=f"Total: {self.total:.2f}")
 
 if __name__ == '__main__':
 	window = Window()
