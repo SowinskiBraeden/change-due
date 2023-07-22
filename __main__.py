@@ -1,7 +1,8 @@
 #!/usr/bin/env python3.11
 from customtkinter import set_appearance_mode, set_default_color_theme
-from customtkinter import CTk, CTkEntry, CTkButton, CTkLabel, CTkFrame, CTkSwitch, StringVar
+from customtkinter import CTk, CTkEntry, CTkButton, CTkLabel, CTkFrame, CTkSwitch, StringVar, CTkTextbox, END
 from currencyButtons import initializeCurrencyButtons
+from math import floor
 
 class Window(CTk):
 	def __init__(self):
@@ -139,13 +140,20 @@ class Window(CTk):
 
 		clearButton: CTkButton = CTkButton(
 			master=actionFrame,
-			text="Clear",
+			text="Reset",
 			command=self.clear,
 			width=200,
 			height=50
 		)
 		clearButton.grid(row=1, column=3, pady=12, padx=10)
 		
+		self.warningLabel: CTkLabel = CTkLabel(
+			master=actionFrame,
+			text="Not enough cash provided.\nAdd to total paid below.",
+			text_color="red",
+			font=("Arial", 14, 'bold')
+		)
+
 		# Left frame bottom
 		self.left_frame_bottom: CTkFrame = CTkFrame(
 			master=self,
@@ -218,6 +226,23 @@ class Window(CTk):
 		self.right_frame.grid_propagate(False)
 		self.right_frame.grid(row=0, column=1, pady=20, padx=10)
 
+		returnAmountLabel: CTkLabel = CTkLabel(
+			master=self.right_frame,
+			text="Return Amount:",
+			font=("Arial", 32, 'bold')
+		)
+		returnAmountLabel.grid(row=0, column=0, pady=20, padx=30)
+
+		self.returnAmountBox: CTkTextbox = CTkTextbox(
+			master=self.right_frame,
+			width=(self.width / 2 - 60),
+			height=(self.height - 150),
+			font=("Arial", 24, 'bold'),
+			fg_color="gray15"
+		)
+		self.returnAmountBox.configure(state="disabled")
+		self.returnAmountBox.grid(row=1, column=0, padx=(20, 0))
+
 		self.mainloop()
 
 	def updateMode(self) -> None:
@@ -227,10 +252,45 @@ class Window(CTk):
 	def quitApplication(self, event=None) -> None: self.destroy()
 
 	def calculate(self) -> None:
-		amountDue: float = float(self.amount.get())
-		print(amountDue)
+		self.returnAmountBox.configure(state="normal")
+		self.returnAmountBox.delete('1.0', END)
+		self.warningLabel.grid_forget()
+		amountDue:    float = float(self.amount.get())
+		returnAmount: float = round(self.total - amountDue, 2)
+		print(self.total, amountDue, returnAmount)
+		if returnAmount < 0:
+			self.warningLabel.grid(row=2, column=2, pady=12, padx=10)
+			return
+		
+		denominationsStrings: dict[float: str] = {
+			100.0: '$100 BillX',
+			50.0:  '$50 BillX',
+			20.0:  '$20 BillX',
+			10.0:  '$10 BillX',
+			5.0:   '$5 BillX',
+			2.0:   '$2 CoinX',
+			1.0:   '$1 CoinX',
+			0.25:  'QuarterX ($0.25)',
+			0.10:  'DimeX ($0.10)',
+			0.05:  'NickelX ($0.05)',
+			0.01:  'PennX ($0.01)'
+		}
+		returnAmountString: str = ""
+		for d in denominationsStrings:
+			due = floor(returnAmount / d)
+			returnAmount -= due * d
+			denominationEnd = "s" if due > 1 else ""
+			if d == 0.01: denominationEnd = "ies" if due > 1 else "y"
+			if due > 0: returnAmountString += f"x{due} {denominationsStrings[d].replace('X', denominationEnd)}\n"
+			if returnAmount == 0: break
+
+		returnAmountString += f"Total Change: ${round(self.total - amountDue, 2)}"
+
+		self.returnAmountBox.insert('1.0', returnAmountString)
+		self.returnAmountBox.configure(state="disabled")
 
 	def sum(self, value: float) -> None:
+		self.warningLabel.grid_forget()
 		if self.total == 0 and not self.mode: return
 		self.total += value * (1 if self.mode else -1)
 		if self.total < 0: self.total = 0
@@ -247,6 +307,11 @@ class Window(CTk):
 
 	def clear(self) -> None:
 		self.amount.set("")
+		self.total: float = 0.0
+		self.totalLabel.configure(text=f"Total: {self.total:.2f}")
+		self.returnAmountBox.configure(state="normal")
+		self.returnAmountBox.delete('1.0', END)
+		self.returnAmountBox.configure(state="disabled")
 	
 	def clearTotal(self) -> None:
 		self.total: float = 0.0
